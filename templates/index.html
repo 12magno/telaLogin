@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reservas de Mesa - Seu Restaurante</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .container {
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 500px;
+        }
+        h2 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #555;
+        }
+        input[type="text"],
+        input[type="email"],
+        input[type="tel"],
+        input[type="date"],
+        input[type="time"],
+        input[type="number"] {
+            width: calc(100% - 22px);
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            width: 100%;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .message {
+            text-align: center;
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 4px;
+            display: none; /* Escondido por padrão */
+        }
+        .message.success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .message.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Reserve sua Mesa</h2>
+        <form id="reservationForm">
+            <div class="form-group">
+                <label for="name">Nome Completo:</label>
+                <input type="text" id="name" name="name" required>
+            </div>
+            <div class="form-group">
+                <label for="email">E-mail:</label>
+                <input type="email" id="email" name="email" required>
+            </div>
+            <div class="form-group">
+                <label for="phone">Telefone:</label>
+                <input type="tel" id="phone" name="phone" placeholder="(XX) XXXXX-XXXX" required>
+            </div>
+            <div class="form-group">
+                <label for="date">Data:</label>
+                <input type="date" id="date" name="date" required>
+            </div>
+            <div class="form-group">
+                <label for="time">Hora:</label>
+                <input type="time" id="time" name="time" required>
+            </div>
+            <div class="form-group">
+                <label for="guests">Número de Pessoas:</label>
+                <input type="number" id="guests" name="guests" min="1" max="20" value="1" required>
+            </div>
+            <button type="submit">Reservar Mesa</button>
+            <div id="confirmationMessage" class="message success"></div>
+            <div id="errorMessage" class="message error"></div>
+        </form>
+    </div>
+
+    <script>
+        document.getElementById('reservationForm').addEventListener('submit', function(event) {
+            event.preventDefault(); // Impede o envio padrão do formulário
+
+            const form = event.target;
+            const formData = new FormData(form);
+
+            // Opcional: Adicionar validação de dados antes de enviar
+            const dateInput = document.getElementById('date');
+            const timeInput = document.getElementById('time');
+            const guestsInput = document.getElementById('guests');
+
+            // Validação de data (não permitir data passada)
+            const selectedDate = new Date(dateInput.value);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0); // Zera a hora para comparar apenas a data
+
+            if (selectedDate < today) {
+                showErrorMessage('A data da reserva não pode ser no passado.');
+                return;
+            }
+
+            // Validação de número de pessoas
+            if (guestsInput.value < 1 || guestsInput.value > 20) {
+                showErrorMessage('O número de pessoas deve estar entre 1 e 20.');
+                return;
+            }
+
+            // Enviar os dados usando Fetch API
+            fetch('/reservar', {
+                method: 'POST',
+                body: new URLSearchParams(formData) // FormData para URL-encoded
+            })
+            .then(response => {
+                // Verifica se a resposta foi bem-sucedida (status 2xx)
+                if (response.ok) {
+                    return response.text(); // Lê a resposta como texto
+                }
+                // Se a resposta não for ok, lança um erro com a mensagem do servidor
+                return response.text().then(text => { throw new Error(text) });
+            })
+            .then(data => {
+                showConfirmationMessage(data || 'Reserva realizada com sucesso!');
+                form.reset(); // Limpa o formulário
+            })
+            .catch(error => {
+                console.error('Erro na requisição:', error);
+                showErrorMessage('Erro ao enviar reserva: ' + error.message);
+            });
+        });
+
+        function showConfirmationMessage(message) {
+            const confMsg = document.getElementById('confirmationMessage');
+            const errorMsg = document.getElementById('errorMessage');
+            confMsg.textContent = message;
+            confMsg.style.display = 'block';
+            errorMsg.style.display = 'none'; // Esconde a mensagem de erro
+        }
+
+        function showErrorMessage(message) {
+            const confMsg = document.getElementById('confirmationMessage');
+            const errorMsg = document.getElementById('errorMessage');
+            errorMsg.textContent = message;
+            errorMsg.style.display = 'block';
+            confMsg.style.display = 'none'; // Esconde a mensagem de sucesso
+        }
+    </script>
+</body>
+</html>
